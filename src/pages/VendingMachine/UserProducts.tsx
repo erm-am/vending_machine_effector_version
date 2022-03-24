@@ -1,29 +1,42 @@
 import React, { useEffect } from "react";
 import { observer } from "mobx-react-lite";
-import { useStore } from "../../hooks/useStore";
+
 import styled from "styled-components";
-import { Button } from "../../components/core/Button";
+
 import { Product } from "../../components/Product";
-export const UserProducts: React.FC = observer((props) => {
-  const { user, vending } = useStore();
+import { combine } from "effector";
+import { $catalogue, $userProducts } from "../../models/vendingMachine/model";
+import { useStore } from "effector-react";
+
+const $products = combine(
+  [$catalogue, $userProducts],
+  ([catalogue, userProducts]) => {
+    return catalogue.map((product) => {
+      const count = userProducts[product.id] ?? 0;
+
+      return { ...product, count };
+    });
+  }
+);
+
+export const UserProducts: React.FC = () => {
+  const products = useStore($products);
   return (
     <Container>
       <Title>Продукты пользователя (readonly)</Title>
       <Products>
-        {vending.catalogue.map((product) => {
-          const productId = product.id;
-          const productCount = user.userProducts.products.get(productId);
+        {products.map((product) => {
           return (
-            <Product key={product.id} disabled={!!productCount}>
+            <Product key={product.id} disabled={!!product.count}>
               <Label>{product.name}</Label>
-              <Label>{productCount} (шт.)</Label>
+              <Label>{product.count} (шт.)</Label>
             </Product>
           );
         })}
       </Products>
     </Container>
   );
-});
+};
 
 const Container = styled.div`
   display: flex;

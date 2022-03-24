@@ -5,13 +5,17 @@ import { UserWallet } from "./UserWallet";
 import { ReceiverWallet } from "./ReceiverWallet";
 import { ShopProducts } from "./ShopProducts";
 import { UserProducts } from "./UserProducts";
-import { createGate, useGate } from "effector-react";
-
+import { useGate } from "effector-react";
+import { VendingMachineGate } from "../../models/vendingMachine/model";
 import styled from "styled-components";
-export const VendingMachineGate = createGate("vendingMachine");
-export const VendingMachine: React.FC = (props) => {
-  useGate(VendingMachineGate, props);
 
+import { useStore } from "effector-react";
+
+import { fetchShopFx } from "../../models/vendingMachine/model";
+
+export const VendingMachine: React.FC = () => {
+  useGate(VendingMachineGate);
+  const pending = useStore(fetchShopFx.pending);
   return (
     <Shop>
       <VendingSection>

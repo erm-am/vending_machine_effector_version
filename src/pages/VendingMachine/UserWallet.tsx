@@ -1,32 +1,40 @@
-import React, { useEffect } from "react";
-import { observer } from "mobx-react-lite";
-import { useStore } from "../../hooks/useStore";
+import React from "react";
+import { useStore } from "effector-react";
 import styled, { css } from "styled-components";
-import { Button } from "../../components/core/Button";
-import { Money } from "../../types";
-import { shopService } from "../../store/vendingMachine.service";
-export const UserWallet: React.FC = observer((props) => {
-  const { user } = useStore();
+import {
+  $userWallet,
+  $userWalletTotalMoney,
+  depositMoneyClicked,
+} from "../../models/vendingMachine/model";
+
+export const UserWallet: React.FC = () => {
+  const userWallet = useStore($userWallet);
+  const userWalletTotalMoney = useStore($userWalletTotalMoney);
+  const convertedUserWallet = Object.entries(userWallet);
 
   return (
     <Container>
       <Title>Деньги пользователя</Title>
       <Wallet>
-        {Array.from(user.userWallet.money.entries()).map(([moneyId, currentQty]) => {
+        {convertedUserWallet.map(([moneyId, count]) => {
           return (
-            <Money disabled={!currentQty} key={moneyId} onClick={() => shopService.cashInsert(moneyId)}>
+            <Money
+              disabled={!count}
+              key={moneyId}
+              onClick={() => depositMoneyClicked(moneyId)}
+            >
               <MoneyCaption>{moneyId} руб</MoneyCaption>
-              <MoneyQuantity title="Количество">{currentQty}</MoneyQuantity>
+              <MoneyQuantity title="Количество">{count}</MoneyQuantity>
             </Money>
           );
         })}
       </Wallet>
       <Amount>
-        Сумма:&nbsp;<b>{user.userWallet.total} руб.</b>
+        Сумма:&nbsp;<b>{userWalletTotalMoney} руб.</b>
       </Amount>
     </Container>
   );
-});
+};
 
 const Container = styled.div`
   display: flex;

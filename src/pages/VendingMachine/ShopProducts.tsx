@@ -1,49 +1,59 @@
 import React, { useEffect } from "react";
-import { observer } from "mobx-react-lite";
-import { useStore as useStoreMobx } from "../../hooks/useStore";
+import { combine } from "effector";
 import styled from "styled-components";
 import { Button } from "../../components/core/Button";
 import { Product } from "../../components/Product";
-
 import { useStore } from "effector-react";
 
-// import { $mappedShopProducts } from "../../models/vendingMachine/model";
-export const ShopProducts: React.FC = () => {
-  // const shopProducts = useStore($mappedShopProducts);
+import {
+  $shopProducts,
+  $catalogue,
+  $reservedShopProducts,
+  removeProductReserveClicked,
+  addProductReserveClicked,
+} from "../../models/vendingMachine/model";
 
-  // console.log("shopProducts", shopProducts);
-  const handleClickAddProductReserve = (productId: number) => {
-    //shopService.addProductReserve(productId);
-  };
-  const handleClickRemoveProductReserve = (productId: number) => {
-    // shopService.removeProductReserve(productId);
-  };
+const $products = combine(
+  [$catalogue, $shopProducts, $reservedShopProducts],
+  ([catalogue, shopProducts, reservedShopProducts]) => {
+    return catalogue.map((product) => {
+      const count = shopProducts[product.id] ?? 0;
+      const reserved = reservedShopProducts[product.id] ?? 0;
+      return { ...product, count, reserved };
+    });
+  }
+);
+
+export const ShopProducts: React.FC = () => {
+  const products = useStore($products);
 
   return (
     <Container>
       <Title>Продукты торгового автомата</Title>
       <Products>
-        ууу
-        {/* {vending.catalogue.map((product) => {
-          const productId = product.id;
-          const productCount = vending.shopProducts.products.get(productId);
-          const reservedProductCount = vending.reservedProducts.products.get(productId) ?? 0;
+        {products.map((product) => {
           return (
-            <Product key={product.id} disabled={!productCount}>
+            <Product key={product.id} disabled={!product.count}>
               <Label>{product.name}</Label>
               <Label>
-                <Button onClick={() => handleClickRemoveProductReserve(product.id)} disabled={!productCount}>
+                <Button
+                  onClick={() => removeProductReserveClicked(product.id)}
+                  disabled={!product.count}
+                >
                   -
                 </Button>
-                {reservedProductCount}\{productCount}
-                <Button onClick={() => handleClickAddProductReserve(product.id)} disabled={!productCount}>
+                {product.reserved}\{product.count}
+                <Button
+                  onClick={() => addProductReserveClicked(product.id)}
+                  disabled={!product.count}
+                >
                   +
                 </Button>
               </Label>
               <Label>Цена: {product.price}</Label>
             </Product>
           );
-        })} */}
+        })}
       </Products>
     </Container>
   );

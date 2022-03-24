@@ -1,61 +1,113 @@
-import { createEvent, createStore, createEffect, sample, combine, guard, restore } from "effector";
+import {
+  createEvent,
+  createStore,
+  createEffect,
+  sample,
+  combine,
+  guard,
+  restore,
+} from "effector";
 import * as api from "../../api";
+import { ICatalogueProduct, Money, MoneyWallet, Products } from "../../types";
+import { createGate } from "effector-react";
+import { createEmptyWallet } from "../../api/mocks";
+import { mergeWalletsMoney } from "./utils";
 
+export const VendingMachineGate = createGate("vendingMachine");
+
+//TODO  Навести порядок
 export const fetchServerDataTrigger = createEvent();
+export const addProductReserveClicked = createEvent<number>();
+export const removeProductReserveClicked = createEvent<number>();
+export const addProductReserve = createEvent<number>();
+export const removeProductReserve = createEvent<number>();
 
-const addReserveProduct = createEvent();
-const removeReserveProduct = createEvent();
+export const depositMoneyClicked = createEvent<string>();
+export const transferUserWalletToReceiverWallet = createEvent<string>();
+export const refundClicked = createEvent();
+export const transferReceiverWalletToUserWallet = createEvent<MoneyWallet>();
 
-const getCatalogueFx = createEffect(async () => await api.getCatalogue());
-const getUserWalletFx = createEffect(async () => await api.getUserWallet());
-const getShopWalletFx = createEffect(async () => await api.getShopWallet());
-const getReceiverWalletFx = createEffect(async () => await api.getReceiverWallet());
-const getUserProductsFx = createEffect(async () => await api.getUserProducts());
-const getShopProductsFx = createEffect(async () => await api.getShopProducts());
+export const buyClicked = createEvent();
 
-export const $catalogue = createStore([]).on(getCatalogueFx.doneData, (_, catalogue) => catalogue);
-export const $userWallet = createStore(new Map()).on(getUserWalletFx.doneData, (_, wallet) => new Map(wallet));
-export const $shopWallet = createStore(new Map()).on(getShopWalletFx.doneData, (_, wallet) => new Map(wallet));
-export const $receiverWallet = createStore(new Map()).on(getReceiverWalletFx.doneData, (_, wallet) => new Map(wallet));
-export const $userProducts = createStore(new Map()).on(getUserProductsFx.doneData, (_, products) => products);
-export const $shopProducts = createStore(new Map()).on(getShopProductsFx.doneData, (_, products) => products);
+const getCatalogueFx = createEffect(api.getCatalogue);
+const getUserWalletFx = createEffect(api.getUserWallet);
+const getShopWalletFx = createEffect(api.getShopWallet);
+const getReceiverWalletFx = createEffect(api.getReceiverWallet);
+const getUserProductsFx = createEffect(api.getUserProducts);
+const getShopProductsFx = createEffect(api.getShopProducts);
 
-export const $reservedShopProducts = createStore(new Map())
-  .on(addReserveProduct, (reservedProducts, productId) => {
-    const newReservedProducts = new Map(reservedProducts.entries());
-    const currentCount = newReservedProducts.get(productId) ?? 0;
-    newReservedProducts.set(productId, currentCount + 1);
-    return newReservedProducts;
-  })
-  .on(removeReserveProduct, (reservedProducts, productId) => {
-    const newReservedProducts = new Map(reservedProducts.entries());
-    const currentCount = newReservedProducts.get(productId) ?? 0;
-    newReservedProducts.set(productId, currentCount - 1);
-    return newReservedProducts;
-  });
-
-export const $mappedShopProducts = combine(
-  [$catalogue, $shopProducts, $reservedShopProducts],
-  ([catalogue, shopProducts, reservedShopProducts]) => {
-    return catalogue.map((product) => ({ ...product, qwe: 1 }));
-  }
+export const fetchShopFx = createEffect(() =>
+  Promise.all([
+    getCatalogueFx(),
+    getUserWalletFx(),
+    getShopWalletFx(),
+    getReceiverWalletFx(),
+    getShopProductsFx(),
+  ])
 );
 
-$catalogue.watch((data) => {
-  console.log(data);
+type Errors = "noMoneyInDeposit" | "noProductsInShop"; //todo
+
+const emptyWallet = createEmptyWallet();
+export const $error = createStore<Errors | null>(null);
+export const $catalogue = createStore<ICatalogueProduct[]>([]);
+export const $userWallet = createStore<MoneyWallet>(emptyWallet);
+export const $shopWallet = createStore<MoneyWallet>(emptyWallet);
+export const $receiverWallet = createStore<MoneyWallet>(emptyWallet);
+export const $userProducts = createStore<Products>({});
+export const $shopProducts = createStore<Products>({});
+export const $reservedShopProducts = createStore<Products>({});
+
+export const $userWalletTotalMoney = $userWallet.map((userWallet) => {
+  return Object.entries(userWallet).reduce((result, [moneyId, count]) => {
+    return Number(moneyId) * count + result;
+  }, 0);
 });
-$userWallet.watch((data) => {
-  console.log(data);
+export const $receiverWalletTotalMoney = $receiverWallet.map((userWallet) => {
+  return Object.entries(userWallet).reduce((result, [moneyId, count]) => {
+    return Number(moneyId) * count + result;
+  }, 0);
 });
-$shopWallet.watch((data) => {
-  console.log(data);
+
+$catalogue.on(getCatalogueFx.doneData, (_, catalogue) => catalogue);
+$userWallet.on(getUserWalletFx.doneData, (_, wallet) => wallet);
+$shopWallet.on(getShopWalletFx.doneData, (_, wallet) => wallet);
+$receiverWallet.on(getReceiverWalletFx.doneData, (_, wallet) => wallet);
+$userProducts.on(getUserProductsFx.doneData, (_, products) => products);
+$shopProducts.on(getShopProductsFx.doneData, (_, products) => products);
+
+$reservedShopProducts.on(addProductReserve, (state, productId) => {
+  if (state[productId]) {
+    return { ...state, [productId]: state[productId] + 1 };
+  } else {
+    return { ...state, [productId]: 1 };
+  }
 });
-$receiverWallet.watch((data) => {
-  console.log(data);
+$reservedShopProducts.on(removeProductReserve, (state, productId) => {
+  if (state[productId]) {
+    return { ...state, [productId]: state[productId] - 1 };
+  } else {
+    return state;
+  }
 });
-$userProducts.watch((data) => {
-  console.log(data);
+
+// Перевод из кошелька юзера в монетоприемник
+$userWallet.on(transferUserWalletToReceiverWallet, (state, moneyId) => {
+  return { ...state, [moneyId]: state[moneyId] - 1 };
 });
-$shopProducts.watch((data) => {
-  console.log(data);
+$receiverWallet.on(transferUserWalletToReceiverWallet, (state, moneyId) => {
+  return { ...state, [moneyId]: state[moneyId] + 1 };
 });
+//
+
+// Перевод всех денег из монетоприемника в кошелек пользователя
+$receiverWallet.on(transferReceiverWalletToUserWallet, () => {
+  return createEmptyWallet();
+});
+
+$userWallet.on(
+  transferReceiverWalletToUserWallet,
+  (userWallet, receiverWallet) => {
+    return mergeWalletsMoney(userWallet, receiverWallet);
+  }
+);
