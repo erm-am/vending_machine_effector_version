@@ -1,7 +1,7 @@
 {
-  "name": "vending_machine",
+  "name": "vending_machine_effector_version",
   "version": "1.0.0",
-  "description": "vending_machine",
+  "description": "vending_machine_effector_version",
   "main": "index.js",
   "scripts": {
     "start": "cross-env NODE_ENV=development webpack serve --config \"./config/webpack/dev.js\"",
@@ -9,7 +9,7 @@
     "test": "cross-env NODE_ENV=test jest"
   },
   "author": "alexey",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@babel/core": "^7.17.2",
     "@babel/plugin-transform-runtime": "^7.17.0",
@@ -48,9 +48,6 @@
     "effector-react": "^22.0.6",
     "express": "^4.17.2",
     "framer-motion": "^6.2.6",
-    "imagemin-webpack-plugin": "^2.4.2",
-    "mobx": "^6.3.13",
-    "mobx-react-lite": "^3.2.3",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "styled-components": "^5.3.3"
