@@ -38,8 +38,8 @@ sample({
   filter: ({ reservedShopProducts, shopProducts }, productId) => {
     const count = shopProducts[productId] ?? 0;
     const reserved = reservedShopProducts[productId] ?? 0;
-    const avalible = count - reserved;
-    return avalible > 0;
+    const available = count - reserved;
+    return available > 0;
   },
   fn: (_, productId) => productId,
   target: addProductReserve,
@@ -60,8 +60,8 @@ sample({
   clock: depositMoneyClicked,
   source: $userWallet,
   filter: (userWallet, moneyId) => {
-    const avalibleMoney = userWallet[moneyId];
-    return avalibleMoney > 0;
+    const availableMoney = userWallet[moneyId];
+    return availableMoney > 0;
   },
   fn: (_, moneyId) => moneyId,
   target: transferUserWalletToReceiverWallet,
