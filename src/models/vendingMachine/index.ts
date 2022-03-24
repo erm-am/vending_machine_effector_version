@@ -1,27 +1,25 @@
+import { sample, combine } from "effector";
+
 import {
-  createEvent,
-  createStore,
-  createEffect,
-  sample,
-  combine,
-  guard,
-  restore,
-} from "effector";
-import {
+  // effects
   fetchShopFx,
+  // gates
+  VendingMachineGate,
+  // events (from ui)
   addProductReserveClicked,
   removeProductReserveClicked,
-  removeProductReserve,
-  addProductReserve,
-  $reservedShopProducts,
-  $shopProducts,
-  VendingMachineGate,
-  depositMoneyClicked,
-  $userWallet,
-  transferUserWalletToReceiverWallet,
-  transferReceiverWalletToUserWallet,
   refundClicked,
   buyClicked,
+  // events
+  removeProductReserve,
+  addProductReserve,
+  depositMoneyClicked,
+  transferUserWalletToReceiverWallet,
+  transferReceiverWalletToUserWallet,
+  // stores
+  $reservedShopProducts,
+  $shopProducts,
+  $userWallet,
   $receiverWallet,
   $receiverWalletTotalMoney,
 } from "./model";
