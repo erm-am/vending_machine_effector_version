@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { observer } from "mobx-react-lite";
 
 import styled from "styled-components";
 import { Button } from "../../components/core/Button";
@@ -12,23 +11,23 @@ import {
   $shopWallet,
   refundClicked,
   buyClicked,
+  $totalMoneyInReceiverWallet,
+  $orderTotalMoney,
 } from "../../models/vendingMachine/model";
 
-const $wallets = combine(
-  [$receiverWallet, $shopWallet],
-  ([receiverWallet, shopWallet]) => {
-    return Object.entries(receiverWallet).map(
-      ([moneyId, receiverWalletCount]) => {
-        const shopWalletCount = shopWallet[moneyId];
-        return { moneyId, receiverWalletCount, shopWalletCount };
-      }
-    );
-  }
-);
+const $wallets = combine([$receiverWallet, $shopWallet], ([receiverWallet, shopWallet]) => {
+  return Object.entries(receiverWallet).map(([moneyId, receiverWalletCount]) => {
+    const shopWalletCount = shopWallet[moneyId];
+    return { moneyId, receiverWalletCount, shopWalletCount };
+  });
+});
 
 export const ReceiverWallet: React.FC = () => {
   const wallets = useStore($wallets);
-
+  const totalMoneyInReceiverWallet = useStore($totalMoneyInReceiverWallet);
+  const orderTotalMoney = useStore($orderTotalMoney);
+  const canBuy = totalMoneyInReceiverWallet >= orderTotalMoney && orderTotalMoney > 0 && totalMoneyInReceiverWallet > 0;
+  const canRefund = totalMoneyInReceiverWallet > 0;
   const gridColumns = [
     {
       key: "moneyId",
@@ -57,35 +56,21 @@ export const ReceiverWallet: React.FC = () => {
           })}
         </Grid>
       </GridContainer>
-      <TotalOrder />
-      <TotalReceiverMoney />
-      <Action disabled={false} onClick={handleClickRefund}>
+      <Total>
+        Сумма к оплате:&nbsp;<b>{orderTotalMoney} руб.</b>
+      </Total>
+      <Total>
+        Сумма в монетоприемнике:&nbsp;<b>{totalMoneyInReceiverWallet} руб.</b>{" "}
+      </Total>
+      <Action disabled={!canRefund} onClick={handleClickRefund}>
         Забрать деньги
       </Action>
-      <Action disabled={false} onClick={handleClickBuy}>
+      <Action disabled={!canBuy} onClick={handleClickBuy}>
         Купить
       </Action>
     </Container>
   );
 };
-
-const TotalOrder = observer(() => {
-  return (
-    <StyledAmount>
-      todo
-      {/* Сумма к оплате:&nbsp;<b>{vending.totalOrder} руб.</b>{" "} */}
-    </StyledAmount>
-  );
-});
-
-const TotalReceiverMoney = observer(() => {
-  return (
-    <StyledAmount>
-      todo
-      {/* Сумма в монетоприемнике:&nbsp;<b>{vending.totalReceiverMoney} руб.</b> */}
-    </StyledAmount>
-  );
-});
 
 const Container = styled.div`
   display: flex;
@@ -105,7 +90,7 @@ const Wallet = styled.div`
   padding: 10px;
 `;
 
-const StyledAmount = styled.div`
+const Total = styled.div`
   display: flex;
   padding: 5px;
 `;

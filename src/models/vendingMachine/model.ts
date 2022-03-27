@@ -1,17 +1,9 @@
-import {
-  createEvent,
-  createStore,
-  createEffect,
-  sample,
-  combine,
-  guard,
-  restore,
-} from "effector";
+import { createEvent, createStore, createEffect, sample, combine, guard, restore } from "effector";
 import * as api from "../../api";
 import { ICatalogueProduct, Money, MoneyWallet, Products } from "../../types";
 import { createGate } from "effector-react";
 import { createEmptyWallet } from "../../api/mocks";
-import { mergeWalletsMoney } from "./utils";
+import { mergeWallets } from "./utils";
 
 export const VendingMachineGate = createGate("vendingMachine");
 
@@ -23,11 +15,16 @@ export const addProductReserve = createEvent<number>();
 export const removeProductReserve = createEvent<number>();
 
 export const depositMoneyClicked = createEvent<string>();
-export const transferUserWalletToReceiverWallet = createEvent<string>();
+export const withdrawMoneyFromUserWallet = createEvent<string>();
+export const depositMoneyToReceiverWallet = createEvent<string>();
+
 export const refundClicked = createEvent();
-export const transferReceiverWalletToUserWallet = createEvent<MoneyWallet>();
+export const depositMoneyToUserWallet = createEvent<MoneyWallet>();
+export const clearReceiverWallet = createEvent();
 
 export const buyClicked = createEvent();
+export const depositMoneyToShopWallet = createEvent<MoneyWallet>();
+export const calculateChange = createEvent<number>();
 
 const getCatalogueFx = createEffect(api.getCatalogue);
 const getUserWalletFx = createEffect(api.getUserWallet);
@@ -37,13 +34,7 @@ const getUserProductsFx = createEffect(api.getUserProducts);
 const getShopProductsFx = createEffect(api.getShopProducts);
 
 export const fetchShopFx = createEffect(() =>
-  Promise.all([
-    getCatalogueFx(),
-    getUserWalletFx(),
-    getShopWalletFx(),
-    getReceiverWalletFx(),
-    getShopProductsFx(),
-  ])
+  Promise.all([getCatalogueFx(), getUserWalletFx(), getShopWalletFx(), getReceiverWalletFx(), getShopProductsFx()])
 );
 
 type Errors = "noMoneyInDeposit" | "noProductsInShop"; //todo
@@ -63,11 +54,26 @@ export const $userWalletTotalMoney = $userWallet.map((userWallet) => {
     return Number(moneyId) * count + result;
   }, 0);
 });
-export const $receiverWalletTotalMoney = $receiverWallet.map((userWallet) => {
+export const $totalMoneyInReceiverWallet = $receiverWallet.map((userWallet) => {
   return Object.entries(userWallet).reduce((result, [moneyId, count]) => {
     return Number(moneyId) * count + result;
   }, 0);
 });
+
+export const $orderTotalMoney = combine([$catalogue, $reservedShopProducts], ([catalogue, reservedShopProducts]) => {
+  const result = Object.entries(reservedShopProducts).reduce((prevValue, [reservedProductId, reservedProductCount]) => {
+    const product = catalogue.find((product) => product.id === Number(reservedProductId));
+    return prevValue + product.price * reservedProductCount;
+  }, 0);
+  return result;
+});
+
+export const $changeForUser = combine(
+  [$orderTotalMoney, $totalMoneyInReceiverWallet],
+  ([orderTotalMoney, totalMoneyInReceiverWallet]) => {
+    return totalMoneyInReceiverWallet - orderTotalMoney;
+  }
+);
 
 $catalogue.on(getCatalogueFx.doneData, (_, catalogue) => catalogue);
 $userWallet.on(getUserWalletFx.doneData, (_, wallet) => wallet);
@@ -91,23 +97,23 @@ $reservedShopProducts.on(removeProductReserve, (state, productId) => {
   }
 });
 
-// Перевод из кошелька юзера в монетоприемник
-$userWallet.on(transferUserWalletToReceiverWallet, (state, moneyId) => {
+$userWallet.on(withdrawMoneyFromUserWallet, (state, moneyId) => {
   return { ...state, [moneyId]: state[moneyId] - 1 };
 });
-$receiverWallet.on(transferUserWalletToReceiverWallet, (state, moneyId) => {
+$receiverWallet.on(depositMoneyToReceiverWallet, (state, moneyId) => {
   return { ...state, [moneyId]: state[moneyId] + 1 };
 });
 //
 
-// Перевод всех денег из монетоприемника в кошелек пользователя
-$receiverWallet.on(transferReceiverWalletToUserWallet, () => {
-  return createEmptyWallet();
+$receiverWallet.reset(clearReceiverWallet);
+$userWallet.on(depositMoneyToUserWallet, (userWallet, receivedMoney) => {
+  return mergeWallets(userWallet, receivedMoney);
 });
 
-$userWallet.on(
-  transferReceiverWalletToUserWallet,
-  (userWallet, receiverWallet) => {
-    return mergeWalletsMoney(userWallet, receiverWallet);
-  }
-);
+$shopWallet.on(depositMoneyToShopWallet, (shopWallet, receivedMoney) => {
+  return mergeWallets(shopWallet, receivedMoney);
+});
+
+$orderTotalMoney.watch((data) => {
+  console.log("$orderTotalMoney", data);
+});

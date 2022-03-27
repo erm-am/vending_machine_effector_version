@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { observer } from "mobx-react-lite";
 
 import { UserWallet } from "./UserWallet";
 import { ReceiverWallet } from "./ReceiverWallet";

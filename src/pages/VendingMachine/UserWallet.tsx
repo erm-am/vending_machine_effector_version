@@ -1,11 +1,7 @@
 import React from "react";
 import { useStore } from "effector-react";
 import styled, { css } from "styled-components";
-import {
-  $userWallet,
-  $userWalletTotalMoney,
-  depositMoneyClicked,
-} from "../../models/vendingMachine/model";
+import { $userWallet, $userWalletTotalMoney, depositMoneyClicked } from "../../models/vendingMachine/model";
 
 export const UserWallet: React.FC = () => {
   const userWallet = useStore($userWallet);
@@ -18,11 +14,7 @@ export const UserWallet: React.FC = () => {
       <Wallet>
         {convertedUserWallet.map(([moneyId, count]) => {
           return (
-            <Money
-              disabled={!count}
-              key={moneyId}
-              onClick={() => depositMoneyClicked(moneyId)}
-            >
+            <Money disabled={!count} key={moneyId} onClick={() => depositMoneyClicked(moneyId)}>
               <MoneyCaption>{moneyId} руб</MoneyCaption>
               <MoneyQuantity title="Количество">{count}</MoneyQuantity>
             </Money>

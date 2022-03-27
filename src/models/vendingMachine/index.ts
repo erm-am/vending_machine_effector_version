@@ -1,4 +1,5 @@
-import { sample, combine } from "effector";
+import { shopProducts } from "./../../api/mocks";
+import { sample, combine, createEvent } from "effector";
 
 import {
   // effects
@@ -14,14 +15,22 @@ import {
   removeProductReserve,
   addProductReserve,
   depositMoneyClicked,
-  transferUserWalletToReceiverWallet,
-  transferReceiverWalletToUserWallet,
+  withdrawMoneyFromUserWallet,
+  depositMoneyToReceiverWallet,
+  clearReceiverWallet,
+  depositMoneyToUserWallet,
+  depositMoneyToShopWallet,
+  calculateChange,
   // stores
   $reservedShopProducts,
   $shopProducts,
+  $userProducts,
   $userWallet,
+  $shopWallet,
   $receiverWallet,
-  $receiverWalletTotalMoney,
+  $totalMoneyInReceiverWallet,
+  $changeForUser,
+  $orderTotalMoney,
 } from "./model";
 
 sample({
@@ -29,6 +38,7 @@ sample({
   target: fetchShopFx,
 });
 
+// Добавить продукт в резерв
 sample({
   clock: addProductReserveClicked,
   source: combine({
@@ -45,6 +55,7 @@ sample({
   target: addProductReserve,
 });
 
+// Убрать продукт из резерва
 sample({
   clock: removeProductReserveClicked,
   source: $reservedShopProducts,
@@ -56,6 +67,8 @@ sample({
   fn: (_, productId) => productId,
   target: removeProductReserve,
 });
+
+// Внести купюру в монетоприемник
 sample({
   clock: depositMoneyClicked,
   source: $userWallet,
@@ -64,18 +77,37 @@ sample({
     return availableMoney > 0;
   },
   fn: (_, moneyId) => moneyId,
-  target: transferUserWalletToReceiverWallet,
+  target: [withdrawMoneyFromUserWallet, depositMoneyToReceiverWallet],
 });
 
+// Возврат денег
 sample({
   clock: refundClicked,
   source: combine({
     receiverWallet: $receiverWallet,
-    receiverWalletTotalMoney: $receiverWalletTotalMoney,
+    totalMoneyInReceiverWallet: $totalMoneyInReceiverWallet,
   }),
-  filter: ({ receiverWalletTotalMoney }) => {
-    return receiverWalletTotalMoney > 0;
+  filter: ({ totalMoneyInReceiverWallet }) => {
+    return totalMoneyInReceiverWallet > 0;
   },
   fn: ({ receiverWallet }) => receiverWallet,
-  target: transferReceiverWalletToUserWallet,
+  target: [clearReceiverWallet, depositMoneyToUserWallet],
+});
+
+// Покупка TODO (нужно подумать, пока получаются очень запутанные цепочки через sample)
+sample({
+  clock: buyClicked,
+  source: combine({
+    changeForUser: $changeForUser,
+    totalMoneyInReceiverWallet: $totalMoneyInReceiverWallet,
+    orderTotalMoney: $orderTotalMoney,
+    receiverWallet: $receiverWallet,
+  }),
+  filter: ({ totalMoneyInReceiverWallet, orderTotalMoney }) => {
+    return totalMoneyInReceiverWallet >= orderTotalMoney && orderTotalMoney > 0 && totalMoneyInReceiverWallet > 0;
+  },
+  fn: ({ receiverWallet }) => {
+    return receiverWallet;
+  },
+  target: [clearReceiverWallet, depositMoneyToShopWallet, calculateChange],
 });

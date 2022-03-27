@@ -1,5 +1,4 @@
 import React, { useEffect } from "react";
-import { observer } from "mobx-react-lite";
 
 import styled from "styled-components";
 
@@ -8,16 +7,13 @@ import { combine } from "effector";
 import { $catalogue, $userProducts } from "../../models/vendingMachine/model";
 import { useStore } from "effector-react";
 
-const $products = combine(
-  [$catalogue, $userProducts],
-  ([catalogue, userProducts]) => {
-    return catalogue.map((product) => {
-      const count = userProducts[product.id] ?? 0;
+const $products = combine([$catalogue, $userProducts], ([catalogue, userProducts]) => {
+  return catalogue.map((product) => {
+    const count = userProducts[product.id] ?? 0;
 
-      return { ...product, count };
-    });
-  }
-);
+    return { ...product, count };
+  });
+});
 
 export const UserProducts: React.FC = () => {
   const products = useStore($products);

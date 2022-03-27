@@ -36,17 +36,11 @@ export const ShopProducts: React.FC = () => {
             <Product key={product.id} disabled={!product.count}>
               <Label>{product.name}</Label>
               <Label>
-                <Button
-                  onClick={() => removeProductReserveClicked(product.id)}
-                  disabled={!product.count}
-                >
+                <Button onClick={() => removeProductReserveClicked(product.id)} disabled={!product.count}>
                   -
                 </Button>
                 {product.reserved}\{product.count}
-                <Button
-                  onClick={() => addProductReserveClicked(product.id)}
-                  disabled={!product.count}
-                >
+                <Button onClick={() => addProductReserveClicked(product.id)} disabled={!product.count}>
                   +
                 </Button>
               </Label>
