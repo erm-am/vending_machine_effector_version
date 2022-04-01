@@ -106,6 +106,7 @@ $receiverWallet.on(depositMoneyToReceiverWallet, (state, moneyId) => {
 //
 
 $receiverWallet.reset(clearReceiverWallet);
+
 $userWallet.on(depositMoneyToUserWallet, (userWallet, receivedMoney) => {
   return mergeWallets(userWallet, receivedMoney);
 });
@@ -114,6 +115,6 @@ $shopWallet.on(depositMoneyToShopWallet, (shopWallet, receivedMoney) => {
   return mergeWallets(shopWallet, receivedMoney);
 });
 
-$orderTotalMoney.watch((data) => {
-  console.log("$orderTotalMoney", data);
-});
+// $orderTotalMoney.watch((data) => {
+//   console.log("$orderTotalMoney", data);
+// });

@@ -94,20 +94,38 @@ sample({
   target: [clearReceiverWallet, depositMoneyToUserWallet],
 });
 
-// Покупка TODO (нужно подумать, пока получаются очень запутанные цепочки через sample)
-sample({
-  clock: buyClicked,
-  source: combine({
-    changeForUser: $changeForUser,
-    totalMoneyInReceiverWallet: $totalMoneyInReceiverWallet,
-    orderTotalMoney: $orderTotalMoney,
-    receiverWallet: $receiverWallet,
-  }),
-  filter: ({ totalMoneyInReceiverWallet, orderTotalMoney }) => {
-    return totalMoneyInReceiverWallet >= orderTotalMoney && orderTotalMoney > 0 && totalMoneyInReceiverWallet > 0;
-  },
-  fn: ({ receiverWallet }) => {
-    return receiverWallet;
-  },
-  target: [clearReceiverWallet, depositMoneyToShopWallet, calculateChange],
-});
+// sample({
+//   clock: buyClicked,
+//   source: combine({
+//     changeForUser: $changeForUser,
+//     totalMoneyInReceiverWallet: $totalMoneyInReceiverWallet,
+//     orderTotalMoney: $orderTotalMoney,
+//     receiverWallet: $receiverWallet,
+//   }),
+//   filter: ({ totalMoneyInReceiverWallet, orderTotalMoney }) => {
+//     return totalMoneyInReceiverWallet >= orderTotalMoney && orderTotalMoney > 0 && totalMoneyInReceiverWallet > 0;
+//   },
+//   fn: ({ receiverWallet }) => {
+//     return receiverWallet;
+//   },
+//   target: [clearReceiverWallet, depositMoneyToShopWallet, calculateChange],
+// });
+
+// TODO нужно разбить на 3 "действия"
+
+// 1) Переложить деньги из монетоприемника в кассу машины
+// 2) Переместить товары потребителю
+// 3) Вернуть сдачу
+
+// Пример реализации
+// Sample Переложить деньги
+const depositedMoney = createEvent(); // чисто для логики
+sample({ clock: buyClicked, target: depositedMoney });
+
+//
+// Sample Переместить товары потребителю
+const productsReleased = createEvent(); //
+sample({ clock: depositedMoney, target: productsReleased });
+
+// Sample Вернуть сдачу
+sample({ clock: productsReleased });
